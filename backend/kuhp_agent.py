@@ -10,8 +10,40 @@ import PyPDF2
 import vertexai
 from vertexai.generative_models import GenerativeModel, ChatSession
 from google.cloud import aiplatform
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.schema import Document
+try:
+    from langchain_text_splitters import RecursiveCharacterTextSplitter
+    from langchain_core.documents import Document
+    LANGCHAIN_AVAILABLE = True
+except ImportError:
+    try:
+        from langchain.text_splitter import RecursiveCharacterTextSplitter
+        from langchain.schema import Document
+        LANGCHAIN_AVAILABLE = True
+    except ImportError:
+        print("[ADK WARNING] LangChain imports failed, using basic text processing")
+        LANGCHAIN_AVAILABLE = False
+        
+        # Fallback Document class
+        class Document:
+            def __init__(self, page_content: str, metadata: Dict[str, Any] = None):
+                self.page_content = page_content
+                self.metadata = metadata or {}
+                
+        # Fallback text splitter
+        class RecursiveCharacterTextSplitter:
+            def __init__(self, chunk_size: int = 1000, chunk_overlap: int = 200):
+                self.chunk_size = chunk_size
+                self.chunk_overlap = chunk_overlap
+                
+            def split_text(self, text: str) -> List[str]:
+                chunks = []
+                start = 0
+                while start < len(text):
+                    end = start + self.chunk_size
+                    chunk = text[start:end]
+                    chunks.append(chunk)
+                    start = end - self.chunk_overlap
+                return chunks
 from agent_config import KUHPAnalyzerAgent, AgentConfig, DocumentConfig
 
 
