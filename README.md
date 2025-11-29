@@ -1,10 +1,10 @@
 # KUHP Analyzer
 
-Aplikasi web AI untuk menganalisis perbedaan antara KUHP lama dan KUHP baru menggunakan Gemini AI. Aplikasi ini memungkinkan pengguna untuk mencari pasal atau kata kunci tertentu dan mendapatkan analisis komprehensif tentang perubahan yang terjadi antara kedua versi KUHP.
+Aplikasi web AI untuk menganalisis perbedaan antara KUHP lama dan KUHP baru menggunakan Gemini 1.5 Flash. Aplikasi ini memungkinkan pengguna untuk mencari pasal atau kata kunci tertentu dan mendapatkan analisis komprehensif tentang perubahan yang terjadi antara kedua versi KUHP.
 
 ## Fitur
 
-- **Analisis AI**: Menggunakan Google Gemini untuk menganalisis perbedaan KUHP
+- **Analisis AI**: Menggunakan Google Gemini 1.5 Flash untuk menganalisis perbedaan KUHP
 - **Interface Modern**: Frontend Next.js yang responsif dan user-friendly
 - **API Backend**: FastAPI backend yang cepat dan scalable
 - **Cloud Ready**: Siap deploy ke Google Cloud Run
@@ -13,27 +13,27 @@ Aplikasi web AI untuk menganalisis perbedaan antara KUHP lama dan KUHP baru meng
 ## Arsitektur
 
 ```
-frontend/          # Next.js frontend application
+frontend/          # Aplikasi frontend Next.js
 ├── app/           # App Router pages
-├── Dockerfile     # Frontend container config
+├── Dockerfile     # Konfigurasi container frontend
 └── package.json   # Dependencies
 
-backend/           # FastAPI backend application
-├── main.py        # Main application file
-├── Dockerfile     # Backend container config
+backend/           # Aplikasi backend FastAPI
+├── main.py        # File aplikasi utama
+├── Dockerfile     # Konfigurasi container backend
 └── requirements.txt # Python dependencies
 
-documents/         # PDF documents
+documents/         # Dokumen PDF
 ├── kuhp_old.pdf   # KUHP lama
 └── kuhp_new.pdf   # KUHP baru
 
-deployment/        # Deployment configurations
-├── deploy.sh      # Automated deployment script
-├── backend.yaml   # Backend Cloud Run config
-└── frontend.yaml  # Frontend Cloud Run config
+deployment/        # Konfigurasi deployment
+├── deploy.sh      # Script deployment otomatis
+├── backend.yaml   # Konfigurasi Cloud Run backend
+└── frontend.yaml  # Konfigurasi Cloud Run frontend
 ```
 
-## Prerequisites
+## Prasyarat
 
 ### Untuk Development Lokal:
 - Node.js 18 atau lebih tinggi
@@ -42,10 +42,10 @@ deployment/        # Deployment configurations
 - Google Gemini API Key
 
 ### Untuk Deployment ke Google Cloud:
-- Google Cloud CLI (`gcloud`) terinstall
-- Google Cloud Project dengan billing enabled
+- Akses ke Google Cloud Console
+- Google Cloud Project dengan billing yang sudah diaktifkan
 - Google Gemini API Key
-- Git untuk version control
+- Repository GitHub (public atau private)
 
 ## Setup Development Lokal
 
@@ -57,12 +57,12 @@ cd kuhp_difference
 
 ### 2. Setup Environment Variables
 ```bash
-# Copy example environment files
+# Copy file environment contoh
 cp .env.example .env
 cp backend/.env.example backend/.env
 cp frontend/.env.example frontend/.env.local
 
-# Edit .env files dan isi dengan API key Anda
+# Edit file .env dan isi dengan API key Anda
 nano .env  # Isi GEMINI_API_KEY
 ```
 
@@ -101,51 +101,80 @@ npm run dev
 
 ## Deployment ke Google Cloud Run
 
-### Metode 1: Menggunakan Script Otomatis (Recommended)
+### Metode Menggunakan Google Cloud Shell (Direkomendasikan)
 
-#### 1. Persiapan
+#### 1. Persiapan Repository
+Pastikan kode Anda sudah di-push ke GitHub repository. Jika belum:
+
 ```bash
-# Install Google Cloud CLI jika belum
-# https://cloud.google.com/sdk/docs/install
-
-# Login ke Google Cloud
-gcloud auth login
-gcloud auth application-default login
-
-# Set project (ganti dengan project ID Anda)
-export PROJECT_ID="your-project-id"
-export GEMINI_API_KEY="your-gemini-api-key"
+# Di terminal lokal
+git add .
+git commit -m "Siap untuk deployment"
+git push origin main
 ```
 
-#### 2. Deploy dengan Script
+#### 2. Buka Google Cloud Console
+1. Buka [Google Cloud Console](https://console.cloud.google.com)
+2. Pilih project Anda atau buat project baru
+3. Pastikan billing sudah diaktifkan
+
+#### 3. Buka Cloud Shell
+1. Klik ikon Cloud Shell di pojok kanan atas Console
+2. Tunggu hingga Cloud Shell terminal terbuka
+3. Cloud Shell sudah dilengkapi dengan gcloud CLI dan semua tool yang diperlukan
+
+#### 4. Siapkan Gemini API Key
+1. Buka [Google AI Studio](https://aistudio.google.com/)
+2. Generate API Key untuk Gemini
+3. Copy API Key tersebut
+
+#### 5. Jalankan Deployment
+Di Cloud Shell, jalankan perintah berikut:
+
 ```bash
+# Set variabel environment
+export PROJECT_ID="project-id-anda"
+export GEMINI_API_KEY="gemini-api-key-anda"
+
+# Clone repository (ganti YOUR_USERNAME dengan username GitHub Anda)
+git clone https://github.com/YOUR_USERNAME/kuhp-analyzer.git
+cd kuhp-analyzer
+
 # Jalankan script deployment
 chmod +x deployment/deploy.sh
 ./deployment/deploy.sh $PROJECT_ID asia-southeast2 $GEMINI_API_KEY
 ```
 
-#### 3. Hasil Deployment
+#### 6. Hasil Deployment
 Script akan menampilkan URL aplikasi setelah selesai:
 ```
 Frontend URL: https://kuhp-analyzer-frontend-xxx.a.run.app
 Backend URL: https://kuhp-analyzer-backend-xxx.a.run.app
 ```
 
-### Metode 2: Deployment Manual
+### Deployment Manual (Jika diperlukan)
 
-#### 1. Enable APIs
+Jika Anda ingin melakukan deployment secara manual di Cloud Shell:
+
+#### 1. Aktifkan API yang Diperlukan
 ```bash
 gcloud services enable cloudbuild.googleapis.com
 gcloud services enable run.googleapis.com
 gcloud services enable containerregistry.googleapis.com
 ```
 
-#### 2. Create Secret
+#### 2. Set Project
+```bash
+gcloud config set project PROJECT_ID_ANDA
+gcloud config set run/region asia-southeast2
+```
+
+#### 3. Buat Secret untuk API Key
 ```bash
 echo -n "$GEMINI_API_KEY" | gcloud secrets create gemini-secret --data-file=-
 ```
 
-#### 3. Deploy Backend
+#### 4. Deploy Backend
 ```bash
 cd backend
 gcloud builds submit --tag gcr.io/$PROJECT_ID/kuhp-analyzer-backend
@@ -160,7 +189,7 @@ gcloud run deploy kuhp-analyzer-backend \
 cd ..
 ```
 
-#### 4. Get Backend URL
+#### 5. Dapatkan Backend URL
 ```bash
 BACKEND_URL=$(gcloud run services describe kuhp-analyzer-backend \
     --platform=managed \
@@ -169,7 +198,7 @@ BACKEND_URL=$(gcloud run services describe kuhp-analyzer-backend \
 echo "Backend URL: $BACKEND_URL"
 ```
 
-#### 5. Deploy Frontend
+#### 6. Deploy Frontend
 ```bash
 cd frontend
 gcloud builds submit --tag gcr.io/$PROJECT_ID/kuhp-analyzer-frontend
@@ -184,7 +213,7 @@ gcloud run deploy kuhp-analyzer-frontend \
 cd ..
 ```
 
-## Configuration
+## Konfigurasi
 
 ### Environment Variables
 
@@ -203,18 +232,18 @@ NEXT_PUBLIC_API_URL=https://your-backend-url.run.app
 
 #### Backend API:
 - `GET /` - Health check
-- `POST /analyze` - Analyze KUHP differences
-- `GET /health` - Detailed health check
-- `GET /docs` - Interactive API documentation
+- `POST /analyze` - Analisis perbedaan KUHP
+- `GET /health` - Health check detail
+- `GET /docs` - Dokumentasi API interaktif
 
-#### Request Format:
+#### Format Request:
 ```json
 {
   "query": "Pasal 351 tentang penganiayaan"
 }
 ```
 
-#### Response Format:
+#### Format Response:
 ```json
 {
   "response": "Analisis perbedaan...",
@@ -224,12 +253,12 @@ NEXT_PUBLIC_API_URL=https://your-backend-url.run.app
 
 ## Testing
 
-### Test API dengan cURL:
+### Test API dengan cURL di Cloud Shell:
 ```bash
 # Health check
 curl https://your-backend-url.run.app/health
 
-# Analyze query
+# Test analisis
 curl -X POST https://your-backend-url.run.app/analyze \
   -H "Content-Type: application/json" \
   -d '{"query": "Pasal 351"}'
@@ -243,14 +272,14 @@ curl -X POST https://your-backend-url.run.app/analyze \
 
 ## Monitoring
 
-### Cloud Run Metrics:
+### Cloud Run Metrics di Console:
 - CPU utilization
 - Memory usage
 - Request count
 - Response time
 - Error rate
 
-### Logs:
+### Logs di Cloud Shell:
 ```bash
 # Backend logs
 gcloud logs tail kuhp-analyzer-backend --region=asia-southeast2
@@ -263,14 +292,14 @@ gcloud logs tail kuhp-analyzer-frontend --region=asia-southeast2
 
 - API keys disimpan sebagai Google Cloud Secrets
 - CORS dikonfigurasi untuk production
-- No authentication required (public access)
+- Public access (tidak memerlukan authentication)
 - Input validation di backend
 - Rate limiting dari Cloud Run
 
-## Cost Estimation
+## Estimasi Biaya
 
 Estimasi biaya Google Cloud Run (per bulan):
-- Backend: ~$10-30 (tergantung usage)
+- Backend: ~$10-30 (tergantung penggunaan)
 - Frontend: ~$5-15 (tergantung traffic)
 - Storage: ~$1-5
 - **Total: ~$16-50/bulan**
@@ -279,8 +308,9 @@ Estimasi biaya Google Cloud Run (per bulan):
 
 ### Error: "Permission denied"
 ```bash
-gcloud auth login
-gcloud auth application-default login
+# Di Cloud Shell
+gcloud auth list
+gcloud config list
 ```
 
 ### Error: "Service not found"
@@ -296,39 +326,56 @@ gcloud builds submit --tag gcr.io/$PROJECT_ID/service-name
 
 ### Error: "Secret not found"
 ```bash
-# Recreate secret
+# Buat ulang secret
 echo -n "$GEMINI_API_KEY" | gcloud secrets create gemini-secret --data-file=-
 ```
 
 ### Frontend tidak bisa connect ke Backend:
-1. Check NEXT_PUBLIC_API_URL environment variable
-2. Verify backend service is running
-3. Check CORS configuration
+1. Periksa environment variable NEXT_PUBLIC_API_URL
+2. Pastikan backend service sudah berjalan
+3. Periksa konfigurasi CORS
 
-## Usage Examples
+## Contoh Penggunaan
 
-### Contoh Query yang Valid:
+### Query yang Valid:
 - "Pasal 351 tentang penganiayaan"
 - "perbedaan pidana pembunuhan"
 - "Bab XVI tentang kejahatan terhadap keamanan negara"
 - "sanksi pencurian dalam KUHP baru"
 
-### Contoh Query yang Ditolak:
+### Query yang Ditolak:
 - "Bagaimana cara masak nasi?"
 - "Siapa presiden Indonesia?"
 - "Cuaca hari ini bagaimana?"
 
+## Panduan Pemeliharaan
+
+### Update Kode:
+1. Lakukan perubahan di repository lokal
+2. Push ke GitHub
+3. Jalankan deployment ulang di Cloud Shell
+
+### Update Dependencies:
+1. Update package.json atau requirements.txt
+2. Push perubahan ke GitHub
+3. Deploy ulang untuk menggunakan dependencies terbaru
+
+### Monitoring Regular:
+- Periksa logs secara berkala
+- Monitor penggunaan resources
+- Periksa error rate dan performance
+
 ## Contributing
 
 1. Fork repository
-2. Create feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to branch (`git push origin feature/AmazingFeature`)
-5. Open Pull Request
+2. Buat feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit perubahan (`git commit -m 'Add some AmazingFeature'`)
+4. Push ke branch (`git push origin feature/AmazingFeature`)
+5. Buat Pull Request
 
 ## License
 
-This project is licensed under the MIT License.
+Project ini menggunakan MIT License.
 
 ## Support
 
@@ -336,4 +383,4 @@ Untuk pertanyaan atau dukungan teknis, silakan buat issue di repository ini.
 
 ---
 
-**Dibuat dengan menggunakan Next.js, FastAPI, dan Google Gemini AI**
+**Dibuat menggunakan Next.js, FastAPI, dan Google Gemini 1.5 Flash - Deploy menggunakan Google Cloud Shell**

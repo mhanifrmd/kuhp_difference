@@ -67,7 +67,7 @@ async def root():
 @app.post("/analyze", response_model=QueryResponse)
 async def analyze_kuhp_difference(request: QueryRequest):
     try:
-        model = genai.GenerativeModel('gemini-2.0-flash-exp')
+        model = genai.GenerativeModel('gemini-1.5-flash')
         
         prompt = f"""
         Anda adalah AI assistant yang bertugas menganalisis perbedaan antara KUHP lama dan KUHP baru.
