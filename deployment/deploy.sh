@@ -46,15 +46,15 @@ echo "Membuat secret untuk Gemini API key..."
 echo -n "$GEMINI_API_KEY" | gcloud secrets create gemini-secret --data-file=- --project=$PROJECT_ID || true
 
 # Clone repository jika belum ada
-if [ ! -d "kuhp-analyzer" ]; then
-    echo "Clone repository dari GitHub..."
-    git clone https://github.com/YOUR_USERNAME/kuhp-analyzer.git
-    cd kuhp-analyzer
-else
-    echo "Repository sudah ada, masuk ke direktori..."
-    cd kuhp-analyzer
-    git pull origin main
-fi
+# if [ ! -d "kuhp-analyzer" ]; then
+#     echo "Clone repository dari GitHub..."
+#     git clone https://github.com/YOUR_USERNAME/kuhp-analyzer.git
+#     cd kuhp-analyzer
+# else
+#     echo "Repository sudah ada, masuk ke direktori..."
+#     cd kuhp-analyzer
+#     git pull origin main
+# fi
 
 # Build dan push backend image
 echo "Membangun dan push backend image..."
