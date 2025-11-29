@@ -1,0 +1,17 @@
+{
+  "name": "kuhp-analyzer",
+  "version": "1.0.0",
+  "description": "AI-powered KUHP difference analyzer",
+  "scripts": {
+    "dev": "docker-compose up --build",
+    "dev:detached": "docker-compose up -d --build",
+    "stop": "docker-compose down",
+    "clean": "docker-compose down --volumes --rmi all",
+    "logs": "docker-compose logs -f",
+    "test": "echo \"Tests will be added here\"",
+    "deploy": "./deployment/deploy.sh"
+  },
+  "keywords": ["kuhp", "ai", "gemini", "law", "analysis"],
+  "author": "KUHP Analyzer Team",
+  "license": "MIT"
+}
