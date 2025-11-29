@@ -1,7 +1,8 @@
 #!/bin/bash
 
-# KUHP Analyzer - Script Deployment untuk Google Cloud Run
+# KUHP Analyzer - Simple Deployment Script (Without Secrets)
 # Menggunakan Google Agent Development Kit (ADK) dengan Gemini 2.5 Flash
+# Alternative deployment jika ada masalah dengan Secret Manager
 # Jalankan script ini di Google Cloud Shell
 
 set -e
@@ -15,7 +16,7 @@ GEMINI_API_KEY=${3:-""}
 
 if [ -z "$PROJECT_ID" ] || [ "$PROJECT_ID" = "your-project-id" ]; then
     echo "Error: Harap berikan PROJECT_ID sebagai argumen pertama"
-    echo "Cara penggunaan: ./deploy.sh PROJECT_ID [REGION] [GEMINI_API_KEY]"
+    echo "Cara penggunaan: ./deploy_simple.sh PROJECT_ID [REGION] [GEMINI_API_KEY]"
     exit 1
 fi
 
@@ -24,9 +25,10 @@ if [ -z "$GEMINI_API_KEY" ]; then
     exit 1
 fi
 
-echo "Memulai deployment KUHP Analyzer ke Google Cloud Run..."
+echo "Memulai deployment KUHP Analyzer ke Google Cloud Run (Simple Mode)..."
 echo "Project ID: $PROJECT_ID"
 echo "Region: $REGION"
+echo "WARNING: API Key akan di-set sebagai environment variable (kurang secure)"
 
 # Aktifkan API yang diperlukan untuk ADK
 echo "Mengaktifkan Google Cloud APIs yang diperlukan untuk ADK..."
@@ -36,42 +38,10 @@ gcloud services enable containerregistry.googleapis.com --project=$PROJECT_ID
 gcloud services enable aiplatform.googleapis.com --project=$PROJECT_ID
 gcloud services enable cloudfunctions.googleapis.com --project=$PROJECT_ID
 gcloud services enable storage.googleapis.com --project=$PROJECT_ID
-gcloud services enable secretmanager.googleapis.com --project=$PROJECT_ID
 
 # Set project dan region default
 gcloud config set project $PROJECT_ID
 gcloud config set run/region $REGION
-
-# Buat secret untuk Gemini API key
-echo "Membuat secret untuk Gemini API key..."
-echo -n "$GEMINI_API_KEY" | gcloud secrets create gemini-secret --data-file=- --project=$PROJECT_ID || true
-
-# Grant permission untuk service account Cloud Run untuk mengakses secret
-echo "Memberikan permission Secret Manager kepada service account..."
-PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format="value(projectNumber)")
-COMPUTE_SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
-
-echo "Project Number: $PROJECT_NUMBER"
-echo "Service Account: $COMPUTE_SA"
-
-# Grant Secret Manager Secret Accessor role
-gcloud secrets add-iam-policy-binding gemini-secret \
-    --member="serviceAccount:${COMPUTE_SA}" \
-    --role="roles/secretmanager.secretAccessor" \
-    --project=$PROJECT_ID
-
-echo "Permission berhasil diberikan kepada service account"
-
-# Clone repository jika belum ada
-# if [ ! -d "kuhp-analyzer" ]; then
-#     echo "Clone repository dari GitHub..."
-#     git clone https://github.com/YOUR_USERNAME/kuhp-analyzer.git
-#     cd kuhp-analyzer
-# else
-#     echo "Repository sudah ada, masuk ke direktori..."
-#     cd kuhp-analyzer
-#     git pull origin main
-# fi
 
 # Build dan push backend image
 echo "Membangun dan push backend image..."
@@ -79,8 +49,8 @@ cd backend
 gcloud builds submit --tag $BACKEND_IMAGE --project=$PROJECT_ID
 cd ..
 
-# Deploy backend service
-echo "Deploy backend service ke Cloud Run..."
+# Deploy backend service (tanpa secrets, menggunakan env var langsung)
+echo "Deploy backend service ke Cloud Run (Simple Mode)..."
 gcloud run deploy kuhp-analyzer-backend \
     --image=$BACKEND_IMAGE \
     --platform=managed \
@@ -89,9 +59,8 @@ gcloud run deploy kuhp-analyzer-backend \
     --memory=4Gi \
     --cpu=2 \
     --timeout=900 \
-    --set-env-vars=GOOGLE_CLOUD_PROJECT=$PROJECT_ID,ENVIRONMENT=production \
     --port=8080 \
-    --set-secrets=GEMINI_API_KEY=gemini-secret:latest \
+    --set-env-vars=GOOGLE_CLOUD_PROJECT=$PROJECT_ID,ENVIRONMENT=production,GEMINI_API_KEY=$GEMINI_API_KEY \
     --project=$PROJECT_ID
 
 # Dapatkan backend URL
@@ -114,8 +83,8 @@ gcloud run deploy kuhp-analyzer-frontend \
     --memory=1Gi \
     --cpu=0.5 \
     --timeout=300 \
-    --set-env-vars=NEXT_PUBLIC_API_URL=$BACKEND_URL \
     --port=3000 \
+    --set-env-vars=NEXT_PUBLIC_API_URL=$BACKEND_URL \
     --project=$PROJECT_ID
 
 # Dapatkan frontend URL
@@ -123,7 +92,7 @@ FRONTEND_URL=$(gcloud run services describe kuhp-analyzer-frontend --platform=ma
 
 echo ""
 echo "=========================================="
-echo "Deployment berhasil diselesaikan!"
+echo "Simple Deployment berhasil diselesaikan!"
 echo "=========================================="
 echo "URL Frontend: $FRONTEND_URL"
 echo "URL Backend: $BACKEND_URL"
@@ -131,4 +100,5 @@ echo ""
 echo "Anda sekarang dapat mengakses aplikasi KUHP Analyzer di:"
 echo "$FRONTEND_URL"
 echo ""
-echo "Catatan: Pastikan untuk mengganti YOUR_USERNAME dengan username GitHub Anda yang sebenarnya"
+echo "CATATAN: API Key disimpan sebagai environment variable."
+echo "Untuk production, gunakan Secret Manager dengan proper IAM permissions."

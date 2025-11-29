@@ -142,9 +142,15 @@ export GEMINI_API_KEY="gemini-api-key-anda"
 git clone https://github.com/YOUR_USERNAME/kuhp-analyzer.git
 cd kuhp-analyzer
 
-# Jalankan script deployment
+# Jalankan script deployment (pilih salah satu)
 chmod +x deployment/deploy.sh
+
+# Opsi 1: Deployment dengan Secret Manager (Recommended)
 ./deployment/deploy.sh $PROJECT_ID asia-southeast2 $GEMINI_API_KEY
+
+# Opsi 2: Simple deployment jika ada masalah permission
+chmod +x deployment/deploy_simple.sh
+./deployment/deploy_simple.sh $PROJECT_ID asia-southeast2 $GEMINI_API_KEY
 ```
 
 #### 6. Hasil Deployment
@@ -312,6 +318,33 @@ Estimasi biaya Google Cloud Run (per bulan):
 - **Total: ~$16-50/bulan**
 
 ## Troubleshooting
+
+### Error: "Permission denied on secret"
+```
+ERROR: Permission denied on secret: projects/.../secrets/gemini-secret/versions/latest 
+for Revision service account ...-compute@developer.gserviceaccount.com
+```
+
+**Solusi 1:** Gunakan deployment script yang sudah diperbaiki (otomatis grant permission):
+```bash
+./deployment/deploy.sh $PROJECT_ID asia-southeast2 $GEMINI_API_KEY
+```
+
+**Solusi 2:** Manual grant permission:
+```bash
+PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format="value(projectNumber)")
+COMPUTE_SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
+
+gcloud secrets add-iam-policy-binding gemini-secret \
+    --member="serviceAccount:${COMPUTE_SA}" \
+    --role="roles/secretmanager.secretAccessor" \
+    --project=$PROJECT_ID
+```
+
+**Solusi 3:** Gunakan simple deployment (tanpa Secret Manager):
+```bash
+./deployment/deploy_simple.sh $PROJECT_ID asia-southeast2 $GEMINI_API_KEY
+```
 
 ### Error: "Permission denied"
 ```bash
