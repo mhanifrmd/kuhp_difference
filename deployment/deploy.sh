@@ -72,7 +72,8 @@ gcloud run deploy kuhp-analyzer-backend \
     --memory=4Gi \
     --cpu=2 \
     --timeout=900 \
-    --set-env-vars=PORT=8080,GOOGLE_CLOUD_PROJECT=$PROJECT_ID,ENVIRONMENT=production \
+    --set-env-vars=GOOGLE_CLOUD_PROJECT=$PROJECT_ID,ENVIRONMENT=production \
+    --port=8080 \
     --set-secrets=GEMINI_API_KEY=gemini-secret:latest \
     --project=$PROJECT_ID
 
@@ -96,7 +97,8 @@ gcloud run deploy kuhp-analyzer-frontend \
     --memory=1Gi \
     --cpu=0.5 \
     --timeout=300 \
-    --set-env-vars=PORT=3000,NEXT_PUBLIC_API_URL=$BACKEND_URL \
+    --set-env-vars=NEXT_PUBLIC_API_URL=$BACKEND_URL \
+    --port=3000 \
     --project=$PROJECT_ID
 
 # Dapatkan frontend URL

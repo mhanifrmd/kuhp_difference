@@ -185,8 +185,11 @@ gcloud run deploy kuhp-analyzer-backend \
     --platform=managed \
     --region=asia-southeast2 \
     --allow-unauthenticated \
-    --memory=2Gi \
-    --cpu=1 \
+    --memory=4Gi \
+    --cpu=2 \
+    --timeout=900 \
+    --port=8080 \
+    --set-env-vars=GOOGLE_CLOUD_PROJECT=$PROJECT_ID,ENVIRONMENT=production \
     --set-secrets=GEMINI_API_KEY=gemini-secret:latest
 cd ..
 ```
@@ -211,6 +214,8 @@ gcloud run deploy kuhp-analyzer-frontend \
     --allow-unauthenticated \
     --memory=1Gi \
     --cpu=0.5 \
+    --timeout=300 \
+    --port=3000 \
     --set-env-vars=NEXT_PUBLIC_API_URL=$BACKEND_URL
 cd ..
 ```
