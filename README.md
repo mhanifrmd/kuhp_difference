@@ -405,22 +405,6 @@ echo -n "$GEMINI_API_KEY" | gcloud secrets create gemini-secret --data-file=-
 - Monitor penggunaan resources
 - Periksa error rate dan performance
 
-## Contributing
-
-1. Fork repository
-2. Buat feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit perubahan (`git commit -m 'Add some AmazingFeature'`)
-4. Push ke branch (`git push origin feature/AmazingFeature`)
-5. Buat Pull Request
-
-## License
-
-Project ini menggunakan MIT License.
-
-## Support
-
-Untuk pertanyaan atau dukungan teknis, silakan buat issue di repository ini.
-
 ---
 
 **Dibuat menggunakan Next.js, FastAPI, dan Google Gemini 2.5 Flash - Deploy menggunakan Google Cloud Shell**
