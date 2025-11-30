@@ -1,5 +1,5 @@
 import os
-from typing import Optional
+from typing import Optional, List, Any
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -12,9 +12,9 @@ from kuhp_agent import get_analyzer_instance, KUHPAnalyzer
 load_dotenv()
 
 app = FastAPI(
-    title="KUHP Analyzer - Gemini File API", 
-    version="3.0.0",
-    description="AI Analyzer untuk analisis KUHP menggunakan Gemini File API"
+    title="KUHP Analyzer - Gemini File API",
+    version="3.1.0",
+    description="AI Analyzer untuk analisis perbedaan KUHP lama dan baru dengan tampilan side-by-side"
 )
 
 app.add_middleware(
@@ -28,9 +28,29 @@ app.add_middleware(
 class QueryRequest(BaseModel):
     query: str
 
+# Models untuk structured comparison data
+class PasalDetail(BaseModel):
+    pasal: Optional[str] = None
+    judul: Optional[str] = None
+    isi: Optional[str] = None
+    sanksi: Optional[str] = None
+
+class PasalComparison(BaseModel):
+    topik: str
+    kuhp_lama: Optional[PasalDetail] = None
+    kuhp_baru: Optional[PasalDetail] = None
+    perbedaan: Optional[List[str]] = None
+
+class ComparisonData(BaseModel):
+    ringkasan: Optional[str] = None
+    pasal_terkait: Optional[List[PasalComparison]] = None
+    analisis_perubahan: Optional[str] = None
+    kesimpulan: Optional[str] = None
+
 class QueryResponse(BaseModel):
-    response: str
+    response: str  # Raw response as fallback
     is_relevant: bool
+    comparison_data: Optional[ComparisonData] = None  # Structured data for side-by-side
     analyzer_info: Optional[dict] = None
 
 class AnalyzerStatusResponse(BaseModel):
@@ -98,9 +118,18 @@ async def analyze_kuhp_difference(request: QueryRequest):
         print(f"[KUHP] Processing query: {query}")
         analysis_result = kuhp_analyzer.analyze_differences(query)
         
+        # Parse comparison_data jika ada
+        comparison_data = None
+        if analysis_result.get("comparison_data"):
+            try:
+                comparison_data = ComparisonData(**analysis_result["comparison_data"])
+            except Exception as e:
+                print(f"[KUHP WARNING] Failed to parse comparison_data: {e}")
+
         return QueryResponse(
             response=analysis_result["response"],
             is_relevant=analysis_result["is_relevant"],
+            comparison_data=comparison_data,
             analyzer_info={
                 "files_used": analysis_result.get("files_used", 0),
                 "model": kuhp_analyzer.config.model_name,

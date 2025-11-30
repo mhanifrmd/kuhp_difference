@@ -5,8 +5,10 @@ Menggunakan Gemini File API untuk analisis PDF langsung
 
 import os
 import time
+import json
+import re
 from pathlib import Path
-from typing import Dict, List, Any, Optional
+from typing import Dict, Any, Optional
 from dataclasses import dataclass
 
 # Google AI SDK for File API
@@ -21,7 +23,7 @@ except ImportError:
 @dataclass
 class KUHPConfig:
     """Konfigurasi untuk KUHP analyzer"""
-    model_name: str = "gemini-2.0-flash"  # Stable model for file API
+    model_name: str = "gemini-2.5-flash"  # Stable model for file API
     temperature: float = 0.1
     old_kuhp_path: str = "documents/kuhp_old.pdf"
     new_kuhp_path: str = "documents/kuhp_new.pdf"
@@ -137,40 +139,72 @@ class KUHPAnalyzer:
         try:
             if not self.is_initialized:
                 raise Exception("Gemini belum diinisialisasi")
-                
+
             if not self.old_kuhp_file or not self.new_kuhp_file:
                 raise Exception("PDF files belum di-upload")
-            
+
             print(f"[KUHP] Starting analysis for query: {query[:100]}...")
-            
+
             # Check relevance first
             is_relevant = self._check_query_relevance(query)
-            
+
             if not is_relevant:
                 return {
-                    "response": self._get_irrelevant_response(query),
+                    "response": self._get_irrelevant_response(),
                     "is_relevant": False,
+                    "comparison_data": None,
                     "files_used": 0
                 }
-            
+
             # Generate analysis dengan PDF files
             analysis_prompt = self._build_analysis_prompt(query)
-            
+
             # Generate response dengan file attachments
-            response = self._generate_response_with_files(analysis_prompt)
-            
+            response_text = self._generate_response_with_files(analysis_prompt)
+
+            # Parse JSON response
+            comparison_data = self._parse_json_response(response_text)
+
             result = {
-                "response": response,
+                "response": response_text,  # Keep raw response as fallback
                 "is_relevant": True,
+                "comparison_data": comparison_data,
                 "files_used": 2  # both PDF files
             }
-            
+
             print("[KUHP] Analysis completed using both KUHP PDF files")
             return result
-            
+
         except Exception as e:
             print(f"[KUHP ERROR] Analysis failed: {e}")
             raise
+
+    def _parse_json_response(self, response_text: str) -> Optional[Dict[str, Any]]:
+        """Parse JSON dari response Gemini"""
+        try:
+            # Coba parse langsung
+            return json.loads(response_text)
+        except json.JSONDecodeError:
+            pass
+
+        # Coba extract JSON dari markdown code block
+        json_patterns = [
+            r'```json\s*([\s\S]*?)\s*```',
+            r'```\s*([\s\S]*?)\s*```',
+            r'\{[\s\S]*\}'
+        ]
+
+        for pattern in json_patterns:
+            match = re.search(pattern, response_text)
+            if match:
+                try:
+                    json_str = match.group(1) if '```' in pattern else match.group(0)
+                    return json.loads(json_str)
+                except json.JSONDecodeError:
+                    continue
+
+        print("[KUHP WARNING] Could not parse JSON from response, returning None")
+        return None
 
     def _check_query_relevance(self, query: str) -> bool:
         """Check apakah query relevan dengan KUHP"""
@@ -185,7 +219,7 @@ class KUHPAnalyzer:
         query_lower = query.lower()
         return any(keyword in query_lower for keyword in kuhp_keywords)
     
-    def _get_irrelevant_response(self, query: str) -> str:
+    def _get_irrelevant_response(self) -> str:
         """Response untuk query yang tidak relevan"""
         return """Maaf, pertanyaan Anda sepertinya tidak terkait dengan KUHP (Kitab Undang-Undang Hukum Pidana) Indonesia.
 
@@ -205,8 +239,8 @@ Contoh pertanyaan yang dapat saya bantu:
 """
 
     def _build_analysis_prompt(self, query: str) -> str:
-        """Build analysis prompt untuk Gemini dengan PDF files"""
-        
+        """Build analysis prompt untuk Gemini dengan PDF files - output JSON terstruktur"""
+
         prompt = f"""Anda adalah AI assistant yang ahli dalam menganalisis KUHP (Kitab Undang-Undang Hukum Pidana) Indonesia.
 
 Tugas Anda: Analisis perbedaan antara KUHP lama dan KUHP baru berdasarkan query pengguna dengan menggunakan kedua file PDF yang telah diberikan.
@@ -215,31 +249,46 @@ Query pengguna: {query}
 
 === INSTRUKSI ANALISIS ===
 1. Baca dan analisis kedua file PDF KUHP (lama dan baru) yang telah diberikan
-2. Bandingkan ketentuan yang relevan dengan query pengguna
-3. Jelaskan perbedaan utama yang ditemukan
-4. Berikan analisis dampak dari perubahan tersebut
+2. Temukan pasal-pasal yang relevan dengan query pengguna dari KEDUA versi KUHP
+3. Bandingkan ketentuan yang relevan secara detail
+4. Jelaskan perbedaan utama yang ditemukan
 5. Gunakan bahasa Indonesia yang jelas dan mudah dipahami
-6. Fokus pada aspek praktis dan implementasi
-7. Jika ada pasal yang dihapus, dipindahkan, atau ditambah, jelaskan dengan detail
-8. Kutip nomor pasal yang spesifik dari kedua versi KUHP
 
-=== FORMAT RESPONS ===
-Berikan analisis dalam format berikut:
+=== FORMAT RESPONS (WAJIB JSON) ===
+Berikan respons dalam format JSON yang valid seperti berikut:
 
-**Ringkasan Perbedaan:**
-[Jelaskan perbedaan utama dalam 2-3 kalimat]
+```json
+{{
+  "ringkasan": "Ringkasan singkat perbedaan utama dalam 2-3 kalimat",
+  "pasal_terkait": [
+    {{
+      "topik": "Nama topik/judul pasal (contoh: Penganiayaan, Pencurian, dll)",
+      "kuhp_lama": {{
+        "pasal": "Nomor pasal di KUHP lama (contoh: Pasal 351)",
+        "judul": "Judul pasal",
+        "isi": "Isi lengkap pasal dari KUHP lama, kutip secara verbatim",
+        "sanksi": "Sanksi/hukuman yang tercantum"
+      }},
+      "kuhp_baru": {{
+        "pasal": "Nomor pasal di KUHP baru (contoh: Pasal 466)",
+        "judul": "Judul pasal",
+        "isi": "Isi lengkap pasal dari KUHP baru, kutip secara verbatim",
+        "sanksi": "Sanksi/hukuman yang tercantum"
+      }},
+      "perbedaan": ["Perbedaan 1", "Perbedaan 2", "dst"]
+    }}
+  ],
+  "analisis_perubahan": "Analisis mendalam tentang perubahan dan dampaknya",
+  "kesimpulan": "Kesimpulan dan rekomendasi"
+}}
+```
 
-**Analisis Detail:**
-[Analisis mendalam tentang perubahan dengan kutipan pasal spesifik]
+PENTING:
+- Respons HARUS berupa JSON valid tanpa markdown code block
+- Jika pasal tidak ada di salah satu versi, isi dengan null
+- Kutip isi pasal secara verbatim dari dokumen PDF
+- Bisa ada lebih dari satu pasal_terkait jika query menyangkut beberapa pasal"""
 
-**Dampak Praktis:**
-[Jelaskan dampak implementasi perubahan]
-
-**Kesimpulan:**
-[Ringkasan dan rekomendasi]
-
-Jawab dalam bahasa Indonesia yang profesional dan informatif."""
-        
         return prompt
 
     def _generate_response_with_files(self, prompt: str) -> str:
