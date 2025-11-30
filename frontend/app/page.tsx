@@ -28,7 +28,7 @@ export default function Home() {
     setResult(null)
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL
       const response = await axios.post(`${apiUrl}/analyze`, {
         query: query.trim()
       })
