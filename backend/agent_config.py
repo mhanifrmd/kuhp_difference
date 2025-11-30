@@ -23,8 +23,8 @@ class AgentConfig:
 @dataclass 
 class DocumentConfig:
     """Konfigurasi untuk dokumen KUHP"""
-    old_kuhp_path: str = "../documents/kuhp_old.pdf"
-    new_kuhp_path: str = "../documents/kuhp_new.pdf"
+    old_kuhp_path: str = "./documents/kuhp_old.pdf"
+    new_kuhp_path: str = "./documents/kuhp_new.pdf"
     chunk_size: int = 1000
     overlap: int = 200
 
