@@ -36,7 +36,7 @@ def test_gemini_model():
         dummy_api_key = "dummy_key_for_testing"
         
         # Test model initialization
-        model_name = 'gemini-2.5-flash-exp'
+        model_name = 'gemini-2.5-flash'
         print(f"[INFO] Testing model: {model_name}")
         
         # Ini hanya test nama model, tidak akan benar-benar memanggil API

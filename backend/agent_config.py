@@ -13,7 +13,7 @@ class AgentConfig:
     """Konfigurasi untuk KUHP Analyzer Agent"""
     agent_name: str = "kuhp-analyzer-agent"
     agent_description: str = "AI Agent untuk menganalisis perbedaan KUHP lama dan baru"
-    model_name: str = "gemini-2.5-flash-exp"
+    model_name: str = "gemini-2.5-flash"
     temperature: float = 0.7
     max_output_tokens: int = 2048
     top_p: float = 0.9

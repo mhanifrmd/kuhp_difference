@@ -202,7 +202,7 @@ def generate_deployment_summary():
     
     summary = {
         "architecture": "Google Agent Development Kit (ADK)",
-        "model": "Gemini 2.5 Flash (gemini-2.5-flash-exp)",
+        "model": "Gemini 2.5 Flash (gemini-2.5-flash)",
         "platform": "Google Cloud Run",
         "memory_requirement": "4GB (recommended)",
         "cpu_requirement": "2 vCPU",
