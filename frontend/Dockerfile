@@ -5,14 +5,11 @@ WORKDIR /app
 # Install dependencies for building
 RUN apk add --no-cache libc6-compat
 
-# Copy package files
+# Copy package files and install dependencies
 COPY package.json ./
 
-# Copy lockfile if exists
-COPY package-lock.json* ./
-
-# Install dependencies
-RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
+# Install dependencies (no lockfile in workspace setup)
+RUN npm install
 
 # Copy source code
 COPY . .
